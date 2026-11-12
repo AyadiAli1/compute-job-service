@@ -1,0 +1,140 @@
+syntax = "proto3";
+
+package computejob.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ComputeJobService accepts compute jobs, executes them asynchronously
+// and reports their progress.
+service ComputeJobService {
+  // SubmitJob validates and enqueues a job and returns immediately.
+  rpc SubmitJob(SubmitJobRequest) returns (SubmitJobResponse);
+  // GetJob returns the current snapshot of a job.
+  rpc GetJob(GetJobRequest) returns (GetJobResponse);
+  // WatchJob streams the current job snapshot first, then every state
+  // change. The server closes the stream once the job reaches a
+  // terminal state (SUCCEEDED, FAILED or CANCELLED).
+  rpc WatchJob(WatchJobRequest) returns (stream WatchJobResponse);
+  // CancelJob requests cancellation of a pending or running job.
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+}
+
+// JobState is the lifecycle state of a job.
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_PENDING = 1;
+  JOB_STATE_RUNNING = 2;
+  JOB_STATE_SUCCEEDED = 3;
+  JOB_STATE_FAILED = 4;
+  JOB_STATE_CANCELLED = 5;
+}
+
+// ---------- Domain: DC power flow ----------
+
+// Bus is a network node.
+message Bus {
+  uint32 id = 1;
+  // Net active power injection in MW (generation minus load).
+  double injection_mw = 2;
+}
+
+// Line connects two buses.
+message Line {
+  uint32 from_bus = 1;
+  uint32 to_bus = 2;
+  // Series reactance in per unit; must be greater than zero.
+  double reactance_pu = 3;
+}
+
+// DcPowerFlowSpec describes a DC power flow calculation.
+message DcPowerFlowSpec {
+  repeated Bus buses = 1;
+  repeated Line lines = 2;
+  // Reference bus with angle 0 that balances the system.
+  uint32 slack_bus_id = 3;
+  // System base power in MVA for per-unit conversion (0 means 100).
+  double base_mva = 4;
+}
+
+// LineFlow is the computed active power flow on a line.
+message LineFlow {
+  uint32 from_bus = 1;
+  uint32 to_bus = 2;
+  // Positive values flow from from_bus to to_bus.
+  double flow_mw = 3;
+}
+
+// DcPowerFlowResult holds the solution of a DC power flow.
+message DcPowerFlowResult {
+  // Voltage angle in radians, keyed by bus id.
+  map<uint32, double> bus_angles_rad = 1;
+  repeated LineFlow line_flows = 2;
+  // Injection the slack bus must provide to balance the system.
+  double slack_injection_mw = 3;
+}
+
+// ---------- Jobs ----------
+
+// JobSpec describes what to compute.
+message JobSpec {
+  oneof kind {
+    DcPowerFlowSpec dc_power_flow = 1;
+  }
+  // Artificial delay before computing, to make status streaming observable.
+  uint32 simulated_delay_ms = 10;
+}
+
+// JobResult holds the output of a successful job.
+message JobResult {
+  oneof kind {
+    DcPowerFlowResult dc_power_flow = 1;
+  }
+}
+
+// Job is a snapshot of a job and its current state.
+message Job {
+  string id = 1;
+  JobState state = 2;
+  JobSpec spec = 3;
+  // Set when state is JOB_STATE_SUCCEEDED.
+  JobResult result = 4;
+  // Set when state is JOB_STATE_FAILED.
+  string error_message = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp finished_at = 8;
+}
+
+// ---------- Requests / responses ----------
+
+message SubmitJobRequest {
+  JobSpec spec = 1;
+}
+
+message SubmitJobResponse {
+  string job_id = 1;
+}
+
+message GetJobRequest {
+  string job_id = 1;
+}
+
+message GetJobResponse {
+  Job job = 1;
+}
+
+message WatchJobRequest {
+  string job_id = 1;
+}
+
+message WatchJobResponse {
+  Job job = 1;
+}
+
+message CancelJobRequest {
+  string job_id = 1;
+}
+
+message CancelJobResponse {
+  Job job = 1;
+}
