@@ -1,0 +1,19 @@
+version: "2"
+
+linters:
+  default: standard      # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - errorlint          # korrektes Error-Wrapping (errors.Is / errors.As)
+    - gocritic           # Stil- und Performance-Hinweise
+    - gosec              # typische Sicherheitsprobleme
+    - misspell
+    - unconvert
+  exclusions:
+    generated: lax       # generierten Code nicht linten
+    presets:
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
