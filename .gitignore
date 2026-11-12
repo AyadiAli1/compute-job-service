@@ -1,0 +1,24 @@
+# Build-Artefakte
+/bin/
+/dist/
+coverage.*
+*.test
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Terraform (.terraform.lock.hcl wird bewusst committet)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Editor / Secrets
+.idea/
+.vscode/
+.env
