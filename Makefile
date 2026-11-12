@@ -6,6 +6,12 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 .DEFAULT_GOAL := help
 .PHONY: help fmt lint test build run clean
 
+
+proto: ## Formatiert, lintet und generiert Code aus den .proto-Dateien
+	buf format -w
+	buf lint
+	buf generate 
+
 help: ## Zeigt diese Hilfe
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-8s\033[0m %s\n", $$1, $$2}'
 
