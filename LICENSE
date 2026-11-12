@@ -1,0 +1,2 @@
+gh api licenses/mit --jq .body \
+  | sed -e 's/\[year\]/2026/' -e 's/\[fullname\]/Vorname Nachname/' > LICENSE
